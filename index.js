@@ -9,7 +9,7 @@ var host
 var team
 
 
-function validate(trial, opts, result) {
+function verify(trial, opts, result, callback) {
 
   var httpOpts = url.parse(host)
   httpOpts.headers = {
@@ -21,21 +21,35 @@ function validate(trial, opts, result) {
 
   http.get(httpOpts, function(res) {
     var status = res.statusCode
-    if (status == 404) return console.error('Trial "%s" not found', trial.red)
-    if (status == 401) return console.error('Incorrect result for "%s"', trial.red)
-    if (status != 200) return console.error('Something crazy went wrong'.red)
+    if (status == 404) return console.error('\nTrial "%s" not found', trial.red)
+    if (status == 401) {
+      console.error('\nIncorrect result for "%s"', trial.red)
+      return callback && callback()
+    }
+    if (status != 200) return console.error('\nSomething crazy went wrong'.red)
 
     // first trial doesn't have a result, so don't show a message for it
-    if (result) console.log('Success!'.green, '"%s" was the correct result for trial "%s"!', result.blue, trial.blue)
+    if (result) console.log('\nSuccess!'.green + ' "%s" was the correct result for trial "%s"!', result.blue, trial.blue)
 
     // grab all the data out of the response
     res.pipe(concat(function(data) {
       var next = res.headers['x-trial']
+
+      if (!next) {
+        console.log('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.rainbow)
+        console.log(' Congratulations on completing all trials!')
+        console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.rainbow)
+        return
+      }
+
       data = JSON.parse(data.toString())
       run(next, data.options, function(err, success) {
         // if the next trial wasn't successful
         // show the instructions again.
-        if (!success) console.log(data.description)
+        if (!success) {
+          console.log('\nInstructions for "%s%s'.white, next.blue, '"'.white)
+          console.log(data.description)
+        }
       })
     }))
 
@@ -45,15 +59,17 @@ function validate(trial, opts, result) {
 
 }
 
-function run(trial, opts, fn, callback) {
+function run(trial, options, callback) {
   var fn = handlers.shift()
   if (!fn) return process.nextTick(callback)
 
-  fn(opts, function(err, result) {
-    if (err) return console.error(error)
-
-    validate(trial, opts, result)
+  var opts = [].concat(options, function(err, result) {
+    if (err) return callback(console.error(error))
+    verify(trial, options, result, callback)
   })
+
+  console.log('\nAttempting %s', trial)
+  fn.apply(null, opts)
 }
 
 
@@ -75,7 +91,7 @@ module.exports = {
     if (!parsed.hostname) throw new Error('serverHost must be a valid url.')
     if (!parsed.protocol) host = 'http://' + host
 
-    validate('start', '')
+    verify('start', '')
   }
 
 }
