@@ -1,10 +1,10 @@
 var trials = require('../index')
 
 trials.serverHost = 'http://localhost:3001'
-trials.teamName = 'At Moss Fear'
+trials.teamName = 'At Muss Fear'
 
-trials.add(function() {
-  console.log('first trial', arguments)
+trials.add(function(options, callback) {
+  console.log('first trial', options)
 })
 
 trials.start()

@@ -9,18 +9,17 @@ var host
 var team
 
 
-function run(trial, result) {
+function validate(trial, opts, result) {
 
-  var httpOpts = {
-    hostname: host,
-    headers: {
-      'x-team': team,
-      'x-trial': trial,
-      'x-result': result
-    }
+  var httpOpts = url.parse(host)
+  httpOpts.headers = {
+    'x-team': team,
+    'x-trial': trial,
+    'x-result': result,
+    'x-options': JSON.stringify(opts)
   }
 
-  http.get(host, function(res) {
+  http.get(httpOpts, function(res) {
     var status = res.statusCode
     if (status == 404) return console.error('Trial "%s" not found', trial.red)
     if (status == 401) return console.error('Incorrect result for "%s"', trial.red)
@@ -29,31 +28,42 @@ function run(trial, result) {
     // first trial doesn't have a result, so don't show a message for it
     if (result) console.log('Success!'.green, '"%s" was the correct result for trial "%s"!', result.blue, trial.blue)
 
-    if (handlers.length) {
-      var fn = handlers.shift()
-
-      res.pipe(concat(function(data) {
-
-      }))
-      // TODO: buffer up the response payload.
-      // display it to the user as a message.
-    }
-
+    // grab all the data out of the response
+    res.pipe(concat(function(data) {
+      var next = res.headers['x-trial']
+      data = JSON.parse(data.toString())
+      run(next, data.options, function(err, success) {
+        // if the next trial wasn't successful
+        // show the instructions again.
+        if (!success) console.log(data.description)
+      })
+    }))
 
   }).on('error', function(e) {
-    console.log("Got error: " + e.message);
-  });
+    console.log("Got error: " + e.message)
+  })
 
+}
+
+function run(trial, opts, fn, callback) {
+  var fn = handlers.shift()
+  if (!fn) return process.nextTick(callback)
+
+  fn(opts, function(err, result) {
+    if (err) return console.error(error)
+
+    validate(trial, opts, result)
+  })
 }
 
 
 module.exports = {
 
-  get serverHost: function() { return host },
-  set serverHost: function(val) { host = val },
+  get serverHost() { return host },
+  set serverHost(val) { host = val },
 
-  get teamName: function() { return team },
-  set teamName: function(val) { team = val },
+  get teamName() { return team },
+  set teamName(val) { team = val },
 
   add: function(fn) {
     handlers.push(fn)
@@ -65,7 +75,7 @@ module.exports = {
     if (!parsed.hostname) throw new Error('serverHost must be a valid url.')
     if (!parsed.protocol) host = 'http://' + host
 
-    run('start', '')
+    validate('start', '')
   }
 
 }
