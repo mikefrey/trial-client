@@ -91,15 +91,23 @@ function congrats() {
 
 function results(res, trial, result) {
   var status = res.statusCode
+
   if (status == 404) return console.error('\nTrial "%s" not found', trial.red)
+
   if (status == 401) {
     console.error('\nIncorrect result for "%s"', trial.red)
     return false
   }
-  if (status != 200) return console.error('\nSomething crazy went wrong'.red)
+
+  if (status != 200) {
+    return console.error('\nSomething crazy went wrong'.red)
+  }
 
   // first trial doesn't have a result, so don't show a message for it
-  if (result) console.log('\nSuccess!'.green + ' "%s" was the correct result for trial "%s"!', result.blue, trial.blue)
+  if (result) {
+    if (result instanceof Buffer) result = result.toString()
+    console.log('\nSuccess!'.green + ' "%s" was the correct result for trial "%s"!', result.blue, trial.blue)
+  }
   return true
 }
 

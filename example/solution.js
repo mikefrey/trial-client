@@ -24,6 +24,14 @@ trials.add(function(key, callback) {
 })
 
 
+// gunzip
+trials.add(function(url, outStream) {
+  var http = require('http')
+  var zlib = require('zlib')
+  http.get(url, function(res) {
+    res.pipe(zlib.createGunzip()).pipe(outStream)
+  })
+})
 
 
 trials.start()
