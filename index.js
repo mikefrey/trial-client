@@ -42,7 +42,12 @@ function run(trial, options) {
 
   var callback = function(err, result) {
     if (err) return (console.error(error), instruct())
-    if (result) result = (new Buffer(result)).toString('base64')
+    if (result) {
+      console.log(typeof result)
+      if (Array.isArray(result)) result = JSON.stringify(result)
+      result = (new Buffer(result)).toString('base64')
+    }
+
     verify(trial, options, result, instruct)
   }
 
@@ -70,11 +75,8 @@ function makeVerifyRequest(trial, opts, result, callback) {
   httpOpts.headers = {
     'x-team': team,
     'x-trial': trial,
-    // 'x-result': result,
     'x-options': JSON.stringify(opts || '')
   }
-
-
 
   var req = http.request(httpOpts, callback)
     .on('error', function(e) {

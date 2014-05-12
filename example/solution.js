@@ -2,7 +2,7 @@ var trials = require('../index')
 trials.serverHost = 'http://localhost:3001'
 trials.teamName = 'At Muss Fear'
 
-// http
+// http.get
 trials.add(function(url, callback) {
   var http = require('http')
   var concat = require('concat-stream')
@@ -10,6 +10,24 @@ trials.add(function(url, callback) {
     res.pipe(concat(function(data) {
       callback(null, data.toString())
     }))
+  })
+})
+
+// multi-get
+trials.add(function(urls, callback) {
+  var http = require('http')
+  var concat = require('concat-stream')
+
+  var count = urls.length
+  var results = []
+  urls.forEach(function(url, idx) {
+    http.get(url, function(res) {
+      res.pipe(concat(function(data) {
+        results[idx] = data.toString()
+        count--
+        if (!count) callback(null, results)
+      }))
+    })
   })
 })
 
@@ -47,6 +65,7 @@ trials.add(function(port, callback) {
   var http = require('http')
   var server = http.createServer(function(req, res) {
     req.pipe(res)
+    res.on('finish', function() { server.close() })
   }).listen(port, callback)
 })
 
@@ -66,13 +85,9 @@ trials.add(function(passwordUrl, messageUrl, outStream) {
            .pipe(through(function(data) {
               this.emit('data', data.toString().replace(/[aeiou]/g, ''))
            }))
-           // .pipe(es.replace(/[aeiou]/g, ''))
            .pipe(crypto.createCipher('aes256', password))
            .pipe(zlib.createGzip())
            .pipe(outStream)
-           // .pipe(concat(function(data) {
-           //   console.log(data.toString('hex'))
-           // }))
       })
     }))
   })
