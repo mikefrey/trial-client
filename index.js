@@ -1,10 +1,9 @@
 
 require('colors')
+var es = require('event-stream')
 var concat = require('concat-stream')
 var http = require('http')
 var url = require('url')
-var stream = require('stream')
-var util = require('util')
 
 var handlers = []
 var host
@@ -18,7 +17,7 @@ function verify(trial, opts, result, callback) {
     if (!results(res, trial, result)) return callback && callback()
 
     // grab all the data out of the response
-    res.pipe(concat(function(data) {
+    res.pipe(es.wait(function(err, data) {
       var next = res.headers['x-trial']
       if (!next) return congrats()
 
@@ -43,6 +42,7 @@ function run(trial, options) {
 
   var callback = function(err, result) {
     if (err) return (console.error(error), instruct())
+    if (result) result = (new Buffer(result)).toString('base64')
     verify(trial, options, result, instruct)
   }
 
@@ -66,18 +66,22 @@ function run(trial, options) {
 function makeVerifyRequest(trial, opts, result, callback) {
 
   var httpOpts = url.parse(host)
-  // httpOpts.method = 'GET'
+  httpOpts.method = 'POST'
   httpOpts.headers = {
     'x-team': team,
     'x-trial': trial,
-    'x-result': result,
+    // 'x-result': result,
     'x-options': JSON.stringify(opts || '')
   }
 
-  http.get(httpOpts, callback)
+
+
+  var req = http.request(httpOpts, callback)
     .on('error', function(e) {
       console.log("Got error: " + e.message)
     })
+
+  req.end(result)
 }
 
 
