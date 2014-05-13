@@ -43,7 +43,6 @@ function run(trial, options) {
   var callback = function(err, result) {
     if (err) return (console.error(error), instruct())
     if (result) {
-      console.log(typeof result)
       if (Array.isArray(result)) result = JSON.stringify(result)
       result = (new Buffer(result)).toString('base64')
     }
@@ -111,8 +110,9 @@ function results(res, trial, result) {
 
   // first trial doesn't have a result, so don't show a message for it
   if (result) {
-    if (result instanceof Buffer) result = result.toString()
-    console.log('\nSuccess!'.green + ' "%s" was the correct result for trial "%s"!', result.blue, trial.blue)
+    // if (result instanceof Buffer) result = result.toString()
+    // console.log('\nSuccess!'.green + ' "%s" was the correct result for trial "%s"!', result.blue, trial.blue)
+    console.log('\nSuccess!'.green + ' You got the correct result for trial "%s"!', trial.blue)
   }
   return true
 }
