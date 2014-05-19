@@ -1,5 +1,5 @@
-node-trial
-==========
+trial-client
+============
 
 This is the client for the [node-trial-server](https://github.com/mikefrey/node-trial-server).
 
